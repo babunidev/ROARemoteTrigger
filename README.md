@@ -1,583 +1,119 @@
-# ROARTrigger
+# ROARemoteTrigger / ROARTrigger
 
-**Author:** Babuni.dev
+**Created and directed by:** Babuni.dev  
+**Repository:** [`babunidev/ROARemoteTrigger`](https://github.com/babunidev/ROARemoteTrigger)  
+**Installable addon name:** **ROARTrigger**  
+**Version:** **1.32**  
+**Target client:** World of Warcraft **Wrath 3.3.5**, interface **30300**  
+**Audit status (2026-10-26):** Git and Lua source reviewed; **no in-game tests** were run.
 
-ROARTrigger is an add-on for the Wrath 3.3.5 client.
+**ROARTrigger** adds playful, configurable emotes to action-bar usage. You decide which slots might trigger a `/roar` (or another native emote) and how frequently. It is designed for **character flavor and ROAR guild atmosphere**, not damage optimization, spell casting or combat analysis.
 
-It triggers battle emotes when configured action bar slots are pressed.
+**An important distinction:** the addon observes attempts to use an action-bar slot. It does **not** confirm that a spell actually landed or that an ability successfully activated. An out-of-range or otherwise unsuccessful ability can still result in an emote.
 
-This addon does not detect confirmed successful spell casts. It detects action bar usage. If an ability is out of range, on cooldown, lacks resources, or fails for another reason, the addon may still trigger.
+The repository name, installed folder, addon title, and slash command are **not identical**. Keep these separate:
 
-## Requirements
+| Purpose | Name |
+| --- | --- |
+| GitHub repository | `ROARemoteTrigger` |
+| AddOns folder | `ROARTrigger` |
+| Lua source / TOC | `ROARTrigger.lua` / `ROARTrigger.toc` |
+| Displayed addon title | `RoarTrigger` (from the actual TOC) |
+| Slash command | `/rogu` |
+| SavedVariables | `ROGUDB` |
 
-- Wrath 3.3.5 client
-- AddOns enabled in the character select screen
+The Lua's opening comment still says **“RoarGuild v1.32”**, reflecting the code's relationship to the earlier RoarGuild implementation. That historical string is not an invitation to rename this package or conflate it with the separate RoarGuild repository.
 
 ## Installation
 
-Place the addon folder here:
+Copy **`ROARTrigger.lua`** and **`ROARTrigger.toc`** into this folder:
 
 ```text
-World of Warcraft\Interface\AddOns\ROARTrigger
+World of Warcraft/
+└── Interface/
+    └── AddOns/
+        └── ROARTrigger/
+            ├── ROARTrigger.toc
+            └── ROARTrigger.lua
 ```
 
-The folder must contain:
+Restart the client or run `/reload`. Make sure the addon is enabled in the AddOns list. The TOC directly loads `ROARTrigger.lua`; installing the GitHub repository under its longer name without checking the folder structure may create confusion. `README.md` is optional for the game loader.
 
-```text
-ROARTrigger.toc
-ROARTrigger.lua
-README.md
-```
+The manifest explicitly targets **interface 30300**. A Vanilla 1.12 addon environment is **not** covered by that declaration; test any different game client before advertising compatibility.
 
-The folder name, `.toc` file name, and Lua file reference must match:
+## Quick setup
 
-```toc
-## Interface: 30300
-## Title: ROARTrigger
-## Notes: Triggers battle emotes when you press specific action bar slots. Supports multiple per-character profiles and per-slot cooldown/chance.
-## Version: 1.32
-## SavedVariables: ROGUDB
-
-ROARTrigger.lua
-```
-
-After installation, restart the game or type:
-
-```text
-/reload
-```
-
-## Purpose
-
-ROARTrigger exists for roleplay flavor, guild atmosphere, and combat noise.
-
-It is not a rotation addon.
-It is not a combat parser.
-It is not a performance tool.
-It does not make decisions for you.
-
-It presses no buttons.
-It casts no spells.
-It only reacts when you press configured action bar slots.
-
-## Core Features
-
-- Triggers emotes from configured action bar slots
-- Supports multiple slot setups
-- Supports per-slot trigger chance
-- Supports per-slot cooldowns
-- Supports a low-chance fallback trigger
-- Supports per-character profiles
-- Stores settings through `ROGUDB`
-- Includes `<ROAR>` guild recruitment messages
-- Tracks basic roar statistics
-
-## Basic Setup
-
-Enable watch mode:
-
-```text
-/rogu watch
-```
-
-Press the action bar button you want to track.
-
-The addon will print the slot number.
-
-Assign that slot to instance 1:
-
-```text
-/rogu slot1 <slot>
-```
-
-Set the trigger chance:
-
-```text
-/rogu chance1 100
-```
-
-Set the cooldown:
-
-```text
-/rogu timer1 2
-```
-
-Now that action bar slot can trigger an emote when pressed.
-
-## Example Setup
-
-If watch mode says:
-
-```text
-pressed slot 5
-```
-
-Use:
+Use `/rogu watch` to display action-bar slot IDs as you press them, then run it again to turn the diagnostic messages off. If the desired button reports slot 5:
 
 ```text
 /rogu slot1 5
-/rogu chance1 100
-/rogu timer1 2
-```
-
-This means:
-
-- instance 1 watches action slot 5
-- it has a 100% trigger chance
-- it has a 2 second cooldown
-
-## Commands
-
-### Help
-
-```text
-/rogu help
-```
-
-Shows the command list.
-
-### Info
-
-```text
+/rogu chance1 40
+/rogu timer1 10
 /rogu info
 ```
 
-Shows addon version, profile, enabled state, emote count, fallback settings, slot settings, and roar stats.
+That creates **instance 1**, watching physical action slot **5**, with a **40% chance on an eligible attempt** and **10 seconds** between eligible attempts. The `1` suffix identifies the configuration instance, **not** the action slot number. Other instances can watch additional slots with their own probability and timer.
 
-### Enable / Disable
+### Main slash commands
 
-```text
-/rogu on
-/rogu off
-```
+| Command | Source-defined purpose |
+| --- | --- |
+| `/rogu help` | Show available commands |
+| `/rogu info` | Show version, current profile, emote registry, configured slots, fallback and statistics |
+| `/rogu watch` | Toggle reports of physical action-slot IDs |
+| `/rogu slotX <slot>` | Create/reassign instance X to a physical slot |
+| `/rogu chanceX <0-100>` | Set chance percent for instance X |
+| `/rogu timerX <seconds>` | Set minimum interval for instance X |
+| `/rogu emote <TOKEN>` | Register an emote in the shared account-wide list |
+| `/rogu emote list` | List known emote tokens and IDs |
+| `/rogu emoteX <id>` | Add an ID to instance X's available choices |
+| `/rogu emoteX -<id>` | Remove that ID from instance X |
+| `/rogu emoteX clear` | Return instance X to emote ID 1 |
+| `/rogu emoteX list` | Show instance X's current emote options |
+| `/rogu fallback chance <0-1000>` | Global fallback chance measured in **per mille** |
+| `/rogu fallback timer <seconds>` | Global fallback post-success cooldown |
+| `/rogu roar` | **Always** perform built-in ROAR (not a random instance emote) |
+| `/rogu invite <1-10>` | Manually send a random ROAR recruitment message to a numbered chat channel |
+| `/rogu rexp` | Show rested XP in bubbles (capped at 30) |
+| `/rogu resetcd` | Reset instance, fallback and session reminder time gates |
+| `/rogu reset` | Delete the configured instances, preserving master emote definitions |
+| `/rogu on` / `off` | Enable/disable automatic emote generation |
 
-Turns the addon on or off.
+Commands are recognized without case sensitivity for the main command word. A configured instance must exist for `chanceX` and `timerX`; `emoteX` can create a placeholder instance with no physical slot yet.
 
-### Watch Mode
+**Emote tokens** are game-native (such as ROAR, CHEER or LAUGH); the addon does not validate a newly entered token against the game client's supported list. Check `/rogu emote list` before referring to an ID.
 
-```text
-/rogu watch
-```
+## Two kinds of automatic emote
 
-Toggles slot watch mode.
+**Configured instance:** Once its cooldown has elapsed, a watched-slot press checks that instance's chance. The instance's last-attempt time is updated **before** the chance roll, so a failed roll consumes the interval. Default instance configuration is **100%** and **six seconds**.
 
-Use this to find action bar slot numbers.
+**Independent global fallback:** By default a valid action slot numbered **1–200** can also trigger a rare emote at **5/1000 = 0.5%**. It has a **two-second** gate, but unlike per-instance timing, its last time advances **only after a successful fallback**. A fallback and a configured instance can both emit on the same press.
 
-Turn it off after setup.
+Both automatic paths obey the overall `/rogu on/off` state. The manual `/rogu roar` command directly calls ROAR even when automatic triggering has been disabled.
 
-### Manual Roar
+## Profiles, stats and reminders
 
-```text
-/rogu roar
-```
+The TOC declares account-wide `ROGUDB`, but Lua stores **per-character configuration profiles** keyed by character name and realm. Those profiles contain instance slot settings, fallback, enabled state and event statistics. The master emote ID list is shared within the account-wide table. Old root-level settings have a one-time migration path.
 
-Immediately performs the `ROAR` emote.
+The addon tracks emitted emote counts: total and a **rolling one-hour window**; it may print a summary when an hour has elapsed **and another action press occurs**. It can also issue a local “You have not roared in a while” reminder on later action activity after **420 seconds since its last recorded roar**, throttled to at least **73 seconds** between reminder messages. These are not autonomous background timers.
 
-### Rested XP
+On `PLAYER_LOGIN`, saved profile state is loaded and instance/fallback cooldown timestamps reset, helping prevent previous-session timing values from blocking new activity.
 
-```text
-/rogu rexp
-```
+## Guild identity and invitation text
 
-Shows rested XP in bubbles and raw XP.
+The current Lua source includes **33** randomized `<ROAR>` recruiting messages. Their voice celebrates curiosity, friendship, stories, wandering and shared adventures instead of player performance. Sending is **manual** through `/rogu invite`; there is no automatic advertising loop.
 
-### Invite Message
+**Check your actual channel numbers.** The source defaults to channel 1 when no value is given and clamps the supplied value to 1–10; it does not verify that channel 1 is General on your client.
 
-```text
-/rogu invite <channel>
-```
+## What this repository is—and is not
 
-Sends a random `<ROAR>` recruitment message to the selected channel number.
+This is the **Wrath 3.3.5-focused ROARTrigger**, in the `ROARemoteTrigger` repository. It shares patterns and historical source naming with [RoarGuild](https://github.com/babunidev/RoarGuild), but it has a separate commit sequence, target client and package name. **It does not include the Roarboard message-board feature** present in the later 1.33 RoarGuild repo, and it does not contain the GodBod exercise system.
 
-Example:
-
-```text
-/rogu invite 1
-```
-
-This sends to channel 1.
-
-Use the correct channel number. The addon does not guess your server’s channel layout.
-
-## Slot Configuration
-
-Each slot setup is called an instance.
-
-Use `slot1`, `slot2`, `slot3`, and so on.
-
-### Set watched slot
-
-```text
-/rogu slot1 <slot>
-```
-
-Example:
-
-```text
-/rogu slot1 5
-```
-
-### Set trigger chance
-
-```text
-/rogu chance1 <0-100>
-```
-
-Example:
-
-```text
-/rogu chance1 50
-```
-
-This gives instance 1 a 50% chance to trigger when the watched slot is pressed.
-
-### Set cooldown
-
-```text
-/rogu timer1 <seconds>
-```
-
-Example:
-
-```text
-/rogu timer1 8
-```
-
-This gives instance 1 an 8 second cooldown.
-
-## Emote Configuration
-
-The addon has a shared emote list.
-
-Default emote:
-
-```text
-ROAR
-```
-
-### Add an emote
-
-```text
-/rogu emote <TOKEN>
-```
-
-Example:
-
-```text
-/rogu emote CHEER
-```
-
-The token must be a valid WoW emote token.
-
-Examples:
-
-```text
-ROAR
-CHEER
-LAUGH
-FLEX
-CHARGE
-```
-
-If the client does not support a token, it will not behave correctly.
-
-### List emotes
-
-```text
-/rogu emote list
-```
-
-Shows all saved emotes and their IDs.
-
-### Assign emotes to an instance
-
-```text
-/rogu emote1 <id>
-```
-
-Example:
-
-```text
-/rogu emote1 2
-```
-
-Adds emote ID 2 to instance 1.
-
-### Remove an emote from an instance
-
-```text
-/rogu emote1 -<id>
-```
-
-Example:
-
-```text
-/rogu emote1 -2
-```
-
-Removes emote ID 2 from instance 1.
-
-### Clear instance emotes
-
-```text
-/rogu emote1 clear
-```
-
-Resets instance 1 back to emote ID 1.
-
-### List instance emotes
-
-```text
-/rogu emote1 list
-```
-
-Shows which emotes instance 1 can use.
-
-## Fallback System
-
-The fallback system is a low-chance global trigger.
-
-It can trigger from any valid action slot press.
-
-Default chance:
-
-```text
-5 / 1000
-```
-
-That means 0.5%.
-
-### Set fallback chance
-
-```text
-/rogu fallback chance <0-1000>
-```
-
-Example:
-
-```text
-/rogu fallback chance 5
-```
-
-Use low values. High values will make the addon noisy.
-
-### Set fallback cooldown
-
-```text
-/rogu fallback timer <seconds>
-```
-
-Example:
-
-```text
-/rogu fallback timer 2
-```
-
-## Reset Commands
-
-### Reset all configured slot instances
-
-```text
-/rogu reset
-```
-
-Clears all watched slot setups.
-
-This does not delete the shared emote list.
-
-### Reset cooldowns
-
-```text
-/rogu resetcd
-```
-
-Clears cooldown gates for configured slots, fallback, and reminder timers.
-
-## Saved Variables
-
-ROARTrigger uses:
-
-```text
-ROGUDB
-```
-
-Settings are saved per character profile using:
-
-```text
-Character-Realm
-```
-
-The shared emote list is account-wide inside the saved variable table.
-
-## Important Behavior
-
-ROARTrigger reacts to action bar slot usage.
-
-It does not confirm:
-
-- successful spell cast
-- successful melee ability
-- valid target
-- sufficient rage, mana, or energy
-- range
-- cooldown availability
-- line of sight
-- macro success
-
-This is intentional.
-
-The addon is built for flavor, not precision.
-
-## Troubleshooting
-
-### The addon does not appear in the AddOns list
-
-Check the folder structure.
-
-Correct:
-
-```text
-Interface\AddOns\ROARTrigger\ROARTrigger.toc
-Interface\AddOns\ROARTrigger\ROARTrigger.lua
-```
-
-Wrong:
-
-```text
-Interface\AddOns\ROARTrigger\ROARTrigger\ROARTrigger.toc
-```
-
-Nested folders will break loading.
-
-### The addon loads but nothing happens
-
-Run:
-
-```text
-/rogu info
-```
-
-If it prints addon information, the addon is loaded.
-
-Then run:
-
-```text
-/rogu watch
-```
-
-Press action bar buttons and check if slot numbers appear.
-
-### Watch mode shows slots but no emotes trigger
-
-Configure a slot:
-
-```text
-/rogu slot1 <slot>
-/rogu chance1 100
-/rogu timer1 2
-```
-
-Then press that same action button.
-
-### Emote does not work
-
-Check the emote token.
-
-Use:
-
-```text
-/rogu emote list
-```
-
-Default should be:
-
-```text
-1: ROAR
-```
-
-Test manually:
-
-```text
-/rogu roar
-```
-
-If `/rogu roar` does not work, the client may not support the expected emote behavior.
-
-### Invite sends to the wrong chat
-
-Channel numbers are client-side and can vary.
-
-Check your chat channel numbers in-game before using:
-
-```text
-/rogu invite <channel>
-```
-
-## Recommended First Test
-
-Use this exact order:
-
-```text
-/reload
-/rogu info
-/rogu watch
-```
-
-Press a button.
-
-If the addon prints:
-
-```text
-pressed slot 5
-```
-
-Run:
-
-```text
-/rogu slot1 5
-/rogu chance1 100
-/rogu timer1 2
-```
-
-Press slot 5 again.
-
-## Release Notes
-
-Version:
-
-```text
-1.32
-```
-
-Client target:
-
-```text
-Wrath 3.3.5
-```
-
-Interface:
-
-```text
-30300
-```
-
-SavedVariables:
-
-```text
-ROGUDB
-```
-
-## Guild Note
-
-Made for `<ROAR>`.
-
-Characters are not loadouts.
-They are stories in motion.
+For source provenance and how the package evolved, see [the journal](docs/DEVLOG.md). This repository is released with an [MIT license](LICENSE) credited to Babuni.dev. During the 2026-10-26 documentation pass, **Lua, TOC and LICENSE were left untouched**.
 
 ## Development documentation
 
-- [Concept](CONCEPT.md) · [Roadmap](ROADMAP.md) · [Changelog](CHANGELOG.md)
-- [Architecture](docs/ARCHITECTURE.md) · [Design evidence](docs/DECISIONS.md) · [Development journal](docs/DEVLOG.md)
-- [AI collaborator rules](AGENTS.md)
-
-The journal distinguishes source-based reconstruction, author direction, AI assistance, and independently verified behavior.
+- [Creative concept](CONCEPT.md) · [Interaction design](docs/DESIGN.md) · [Guild content and emotes](docs/CONTENT.md)
+- [Architecture](docs/ARCHITECTURE.md) · [Design and technical decisions](docs/DECISIONS.md) · [Development journal](docs/DEVLOG.md)
+- [Verification roadmap](ROADMAP.md) · [Changelog](CHANGELOG.md)
+- [AI collaboration and attribution](docs/AI_COLLABORATION.md) · [Development-agent instructions](AGENTS.md)
