@@ -1,5 +1,7 @@
 # ROARTrigger
 
+**Author:** Babuni.dev
+
 ROARTrigger is an add-on for the Wrath 3.3.5 client.
 
 It triggers battle emotes when configured action bar slots are pressed.
